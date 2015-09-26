@@ -72,7 +72,9 @@ class ZeroCrossing(object):
         return offset
 
     def getRMS(self):
-        return np.std(self.y)
+        'Get RMS over all of the full cycles in signal.'
+        ind = self._getFullCycleIndices()
+        return np.std(self.y[ind])
 
     def getZeroCrossingTimes(self):
         'Get times corresponding to signal zero crossings.'
