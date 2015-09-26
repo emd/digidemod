@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 
 class ZeroCrossing(object):
-    def __init__(self, y, Fs, t0=0):
+    def __init__(self, y, Fs, t0=0, AC_coupled=True, plot=False):
         '''Initialize zero crossing demodulator object.
 
         Parameters:
@@ -23,10 +23,22 @@ class ZeroCrossing(object):
             The initial time corresponding to `y[0]`.
             [t0] = 1 / [Fs]
 
+        AC_coupled - bool
+            If True, remove DC offset from signal `y` before
+            computing the zero crossing times
+
+        plot - bool
+            If True, plot the original signal, the component
+            of the signal used to compute the DC offset/RMS,
+            and the computed DC offset.
+
         '''
         self.Fs = Fs
         self.t0 = t0
         self.y = y
+
+        if AC_coupled:
+            self.y -= self.getDCOffset(plot=plot)
 
     def getTimeBase(self):
         'Get time base corresponding to signal `y`.'
@@ -62,8 +74,17 @@ class ZeroCrossing(object):
     def getRMS(self):
         return np.std(self.y)
 
-    def getZeroCrossings(self):
-        pass
+    def getZeroCrossingTimes(self):
+        'Get times corresponding to signal zero crossings.'
+        # Find rising and falling zero crossing times
+        rising_xtimes = self._getRisingZeroCrossingTimes()
+        falling_xtimes = self._getRisingZeroCrossingTimes(invert=True)
+
+        # Merge and sort the zero crossing arrays
+        xtimes = np.concatenate((rising_xtimes, falling_xtimes))
+        xtimes.sort()
+
+        return xtimes
 
     def _getFullCycleIndices(self):
         '''Get indices corresponding to "full"/complete cycles in signal,
