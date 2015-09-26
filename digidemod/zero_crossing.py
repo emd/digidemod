@@ -28,8 +28,63 @@ class ZeroCrossing(object):
         self.t0 = t0
         self.y = y
 
+    def getTimeBase(self):
+        'Get time base corresponding to signal `y`.'
+        t0 = self.t0
+        Fs = self.Fs
+        return np.arange(t0, t0 + (len(self.y) / Fs), 1. / Fs)
+
+    def getDCOffset(self, plot=False):
+        '''Get signal mean over an integer number of cycles.
+        (Note that non-integer/fractional cycles will bias the estimate.)
+
+        '''
+        # Compute mean over all of the full cycles in signal
+        ind = self._getFullCycleIndices()
+        offset = np.mean(self.y[ind])
+
+        if plot:
+            plt.figure()
+            t = self.getTimeBase()
+            plt.plot(t, self.y, '-sb')
+            plt.plot(t[ind], self.y[ind], '-sr')
+            plt.axhline(offset, c='k')
+
+            plt.xlabel('t')
+            plt.ylabel('y')
+            plt.legend(['signal', 'full cycles', 'computed mean'],
+                       loc='lower right')
+
+            plt.show()
+
+        return offset
+
+    def getRMS(self):
+        return np.std(self.y)
+
     def getZeroCrossings(self):
         pass
+
+    def _getFullCycleIndices(self):
+        '''Get indices corresponding to "full"/complete cycles in signal,
+        where a full cycle is defined as the signal between two successive
+        rising (or falling) zero crossings. The particular convention adopted
+        is determined by which type of zero crossing occurs the earliest;
+        that is, if the earliest zero crossing is rising, a cycle is defined
+        as the points between two successive rising zero crossings.
+
+        '''
+        rising_ind = self._getRisingZeroCrossingIndices()
+        falling_ind = self._getRisingZeroCrossingIndices(invert=True)
+
+        if rising_ind[0] < falling_ind[0]:
+            # Cycle defined by two successive rising zero crossings
+            crossing_ind = self._getRisingZeroCrossingIndices()
+        else:
+            # Cycle defined by two successive falling zero crossings
+            crossing_ind = self._getRisingZeroCrossingIndices(invert=True)
+
+        return np.arange(crossing_ind[0], crossing_ind[-1], 1)
 
     def _getRisingZeroCrossingIndices(self, invert=False):
         '''Get indices immediately preceding a "rising" zero crossing.
@@ -93,58 +148,6 @@ class ZeroCrossing(object):
         crossings /= self.Fs
 
         return crossings
-
-    def getTimeBase(self):
-        'Get time base corresponding to signal `y`.'
-        t0 = self.t0
-        Fs = self.Fs
-        return np.arange(t0, t0 + (len(self.y) / Fs), 1. / Fs)
-
-    def _getFullCycleIndices(self):
-        '''Get indices corresponding to "full"/complete cycles in signal,
-        where a full cycle is defined as the signal between two successive
-        rising (or falling) zero crossings. The particular convention adopted
-        is determined by which type of zero crossing occurs the earliest;
-        that is, if the earliest zero crossing is rising, a cycle is defined
-        as the points between two successive rising zero crossings.
-
-        '''
-        rising_ind = self._getRisingZeroCrossingIndices()
-        falling_ind = self._getRisingZeroCrossingIndices(invert=True)
-
-        if rising_ind[0] < falling_ind[0]:
-            # Cycle defined by two successive rising zero crossings
-            crossing_ind = self._getRisingZeroCrossingIndices()
-        else:
-            # Cycle defined by two successive falling zero crossings
-            crossing_ind = self._getRisingZeroCrossingIndices(invert=True)
-
-        return np.arange(crossing_ind[0], crossing_ind[-1], 1)
-
-    def getDCOffset(self, plot=False):
-        '''Get signal mean over an integer number of cycles.
-        (Note that non-integer/fractional cycles will bias the estimate.)
-
-        '''
-        # Compute mean over all of the full cycles in signal
-        ind = self._getFullCycleIndices()
-        offset = np.mean(self.y[ind])
-
-        if plot:
-            plt.figure()
-            t = self.getTimeBase()
-            plt.plot(t, self.y, '-sb')
-            plt.plot(t[ind], self.y[ind], '-sr')
-            plt.axhline(offset, c='k')
-
-            plt.xlabel('t')
-            plt.ylabel('y')
-            plt.legend(['signal', 'full cycles', 'computed mean'],
-                       loc='lower right')
-
-            plt.show()
-
-        return offset
 
 
 if __name__ == '__main__':
