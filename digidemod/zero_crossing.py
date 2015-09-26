@@ -100,6 +100,42 @@ class ZeroCrossing(object):
         Fs = self.Fs
         return np.arange(t0, t0 + (len(self.y) / Fs), 1. / Fs)
 
+    def getDCOffset(self, plot=False):
+        '''Get signal mean over an integer number of cycles.
+        (Note that non-integer/fractional cycles will bias the estimate.)
+        '''
+        # A full cycle is contained between two successive
+        # rising (or falling) zero crossings. The particular
+        # convention adopted is determined by which type
+        # of zero crossing occurs the earliest; that is,
+        # if the earliest zero crossing is rising, a cycle
+        # is defined as the points between two successive
+        # rising zero crossings.
+        rising_ind = self._getRisingZeroCrossingIndices()
+        falling_ind = self._getRisingZeroCrossingIndices(invert=True)
+
+        if rising_ind[0] < falling_ind[0]:
+            # Cycle defined by two successive rising zero crossings
+            ind = self._getRisingZeroCrossingIndices()
+        else:
+            # Cycle defined by two successive falling zero crossings
+            ind = self._getRisingZeroCrossingIndices(invert=True)
+
+        # Compute mean over all of the full cycles in signal
+        # Recall that `ind` corresponds to the indices
+        # immediately *preceding* rising (or falling) zero crossings.
+        offset = np.mean(self.y[ind[0]:ind[-1]])
+
+        if plot:
+            plt.figure()
+            t = self.getTimeBase()
+            plt.plot(t, self.y, 'b')
+            plt.plot(t[ind[0]:ind[-1]], self.y[ind[0]:ind[-1]], '-sr')
+            plt.axhline(offset, c='k')
+            plt.show()
+
+        return offset
+
 
 if __name__ == '__main__':
     t0 = 0
