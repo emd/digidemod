@@ -31,7 +31,7 @@ class ZeroCrossing(object):
     def getZeroCrossings(self):
         pass
 
-    def _getRisingZeroCrossingIndices(self):
+    def _getRisingZeroCrossingIndices(self, invert=False):
         '''Get indices immediately preceding a "rising" zero crossing.
 
         A "rising" zero crossing occurs between two points
@@ -47,10 +47,22 @@ class ZeroCrossing(object):
 
             https://gist.github.com/endolith/255291
 
-        '''
-        return np.where(np.logical_and(self.y[:-1] < 0, self.y[1:] >= 0))[0]
+        Parameters:
+        -----------
+        invert - bool
+            If True, find "falling" zero crossings as opposed to rising.
+            Functionally, this is simply accomplished by finding the
+            rising zeros of the *negative* of the original function.
 
-    def _getRisingZeroCrossingTimes(self):
+        '''
+        if invert:
+            y = -self.y
+        else:
+            y = self.y
+
+        return np.where(np.logical_and(y[:-1] < 0, y[1:] >= 0))[0]
+
+    def _getRisingZeroCrossingTimes(self, invert=False):
         '''Get times corresponding to a "rising" zero crossing.
         The zero crossing time is determined via linear interpolation
         between the point immediately preceding the zero crossing
@@ -61,9 +73,16 @@ class ZeroCrossing(object):
 
             https://gist.github.com/endolith/255291
 
+        Parameters:
+        -----------
+        invert - bool
+            If True, find "falling" zero crossings as opposed to rising.
+            Functionally, this is simply accomplished by finding the
+            rising zeros of the *negative* of the original function.
+
         '''
         # Find all indices immediately preceding a rising zero crossing
-        ind = self._getRisingZeroCrossingIndices()
+        ind = self._getRisingZeroCrossingIndices(invert=invert)
 
         # Find intersample zero-crossing "indices" using linear interpolation
         crossings = np.asarray(
@@ -96,8 +115,16 @@ if __name__ == '__main__':
     plt.plot(t, zc.y, '-sb')
     plt.axhline(0, c='k')
 
-    ind = zc._getRisingZeroCrossingIndices()
-    plt.plot(t[ind], zc.y[ind], 'sg')
+    rising_ind = zc._getRisingZeroCrossingIndices()
+    plt.plot(t[rising_ind], zc.y[rising_ind], 'sg')
 
-    zc_time = zc._getRisingZeroCrossingTimes()
-    plt.plot(zc_time, np.zeros(len(zc_time)), '*r')
+    rising_zc_time = zc._getRisingZeroCrossingTimes()
+    plt.plot(rising_zc_time, np.zeros(len(rising_zc_time)), '*r')
+
+    falling_ind = zc._getRisingZeroCrossingIndices(invert=True)
+    plt.plot(t[falling_ind], zc.y[falling_ind], 'og')
+
+    falling_zc_time = zc._getRisingZeroCrossingTimes(invert=True)
+    plt.plot(falling_zc_time, np.zeros(len(falling_zc_time)), '*r')
+
+    plt.show()
