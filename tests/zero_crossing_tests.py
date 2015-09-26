@@ -33,14 +33,42 @@ def test_getTimeBase():
 def test_getFullCycleIndices():
     # Set up a simple triangle wave with 2.5 cycles.
     # Note that the first zero crossing is a rising zero crossing.
-    y = np.array([-1, 1, -1, 1, -1, 1])
+    y = np.array([-1., 1., -1., 1., -1., 1.])
     full_cycle_ind = np.array([0, 1, 2, 3])
 
     zc = ZeroCrossing(y, 1)
     np.testing.assert_equal(full_cycle_ind, zc._getFullCycleIndices())
 
     # Now, try with the inverse of the above signal
-    # such that the first zero crossing is "falling"
+    # such that the first zero crossing is "falling"" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" """ "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "
     y = -y
     zc = ZeroCrossing(y, 1)
     np.testing.assert_equal(full_cycle_ind, zc._getFullCycleIndices())
+
+
+def test_getDCOffset():
+    # Set up a simple triangle wave with 2.5 cycles, with DC offset 0.1
+    y_DC = 0.1
+    y = y_DC + np.array([-1., 1., -1., 1., -1., 1.])
+
+    zc = ZeroCrossing(y, 1, AC_coupled=False)
+    tools.assert_almost_equal(y_DC, zc.getDCOffset())
+
+
+def test_getRMS():
+    # Set up a simple triangle wave with 2.5 cycles
+    y = np.array([-1., 1., -1., 1., -1., 1.])
+
+    zc = ZeroCrossing(y, 1)
+    tools.assert_equal(1., zc.getRMS())
+
+
+def test_getZeroCrossingTimes():
+    # Set up a simple triangle wave with 2.5 cycles
+    y = np.array([-1., 1., -1., 1., -1., 1.])
+    t = np.arange(len(y))
+    Fs = 1. / np.mean(np.diff(t))
+    xtimes = t[:-1] + (0.5 * np.diff(t))
+
+    zc = ZeroCrossing(y, Fs, t0=t[0])
+    np.testing.assert_allclose(xtimes, zc.getZeroCrossingTimes())
