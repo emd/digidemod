@@ -75,6 +75,12 @@ class ZeroCrossing(object):
 
         return crossings
 
+    def getTimeBase(self):
+        'Get time base corresponding to signal `y`.'
+        t0 = self.t0
+        Fs = self.Fs
+        return np.arange(t0, t0 + (len(self.y) / Fs), 1. / Fs)
+
 
 if __name__ == '__main__':
     t0 = 0
