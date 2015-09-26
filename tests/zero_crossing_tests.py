@@ -5,6 +5,9 @@ from digidemod import ZeroCrossing
 
 def test_constant():
     # Should detect *no* zero crossings with a constant array
+    # Specify `AC_coupled` = False to prevent computation of DC offset,
+    # which is only a well-defined operation when there are two or more
+    # zero crossings of the same type.
     zc = ZeroCrossing(np.array([1, 1]), 1, AC_coupled=False)
     tools.assert_equal(len(zc._getRisingZeroCrossingIndices()), 0)
     tools.assert_equal(len(zc._getRisingZeroCrossingTimes()), 0)
@@ -12,6 +15,9 @@ def test_constant():
 
 def test_linear():
     # Should detect *one* rising zero crossing
+    # Specify `AC_coupled` = False to prevent computation of DC offset,
+    # which is only a well-defined operation when there are two or more
+    # zero crossings of the same type.
     zc = ZeroCrossing(np.array([-1, 0, 1]), 1, AC_coupled=False)
     tools.assert_equal(zc._getRisingZeroCrossingIndices(), np.array([0]))
     tools.assert_equal(zc._getRisingZeroCrossingTimes(), np.array([1]))
