@@ -63,6 +63,9 @@ class ZeroCrossing(object):
 
         self.crossing_times = self.getZeroCrossingTimes()
 
+        if len(self.crossing_times) > 0:
+            self.f = self.getFrequency()
+
     def getTimeBase(self):
         'Get time base corresponding to signal `y`.'
         t0 = self.t0
@@ -125,12 +128,28 @@ class ZeroCrossing(object):
         return f
 
     def getNumCycles(self):
-        'Get number of cycles in signal `self.y`'
-        pass
+        '''Get number of cycles in signal `self.y`. Additionally, multiplying
+        the cycles by 2 * pi converts to radians.
 
-    def getPhaseChange(self):
-        'Get number of radians swept through in signal `self.y`.'
-        pass
+        '''
+        # Get number of cycles corresponding to zero crossings,
+        # noting that each successive pair of zero crossings corresponds
+        # to an additional half-cycle
+        N = 0.5 * (len(self.crossing_times) - 1)
+
+        # However, we still need to account for the fractional cycles
+        # before the first zero crossing and after the last zero crossing
+        t = self.getTimeBase()
+
+        # Time window between first and last *digitized* point
+        T = t[-1] - t[0]
+
+        # Time window between first and last *zero crossing*
+        Tzc = self.crossing_times[-1] - self.crossing_times[0]
+
+        N += self.f * (T - Tzc)
+
+        return N
 
     def _fit(self):
         'Fit zero crossings to a line return relevant fitting parameters.'

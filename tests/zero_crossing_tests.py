@@ -91,3 +91,16 @@ def test_getFrequency():
     Fs = 1. / np.mean(np.diff(t))
     zc = ZeroCrossing(y, Fs, t0=t[0])
     tools.assert_almost_equal(zc.getFrequency(), f, places=3)
+
+
+def test_getNumCycles():
+    # Create signal with a specified number of cycles
+    f = np.sqrt(2)
+    t = np.random.rand(1) + np.arange(0, 10, 1. / 11)
+    num_cycles = f * (t[-1] - t[0])
+    y = np.cos(2 * np.pi * f * t)
+
+    # Construct zero crossing object and test frequency calculation
+    Fs = 1. / np.mean(np.diff(t))
+    zc = ZeroCrossing(y, Fs, t0=t[0])
+    tools.assert_almost_equal(zc.getNumCycles(), num_cycles, places=2)
