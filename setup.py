@@ -5,7 +5,7 @@ except ImportError:
 
 config = {
     'name': 'digidemod',
-    'version': '0.1',
+    'version': '0.1.1',
     'packages': ['digidemod'],
     'install_requires': ['numpy', 'scipy', 'matplotlib', 'nose'],
     'author': 'Evan M. Davis',

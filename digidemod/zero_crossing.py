@@ -234,9 +234,12 @@ class ZeroCrossing(object):
         crossings = np.asarray(
             [i - (self.y[i] / (self.y[i + 1] - self.y[i])) for i in ind])
 
-        # Convert the intersample "indices" to times by normalizing
+        # Convert the intersample "indices" to relative times by normalizing
         # to the sample frequency, `Fs`. (Recall:  t_n = n (dt) = n / Fs).
         crossings /= self.Fs
+
+        # Convert relative times to absolute times
+        crossings += self.t0
 
         return crossings
 
