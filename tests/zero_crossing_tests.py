@@ -78,3 +78,16 @@ def test_getZeroCrossingTimes():
 
     zc = ZeroCrossing(y, Fs, t0=t[0])
     np.testing.assert_allclose(xtimes, zc.getZeroCrossingTimes())
+
+
+def test_getFrequency():
+    # Create signal with a specified frequency and random initial phase
+    f = np.sqrt(2)
+    t = np.arange(0, 10, 0.1)
+    ph0 = 2 * np.pi * np.random.rand(1)
+    y = np.cos((2 * np.pi * f * t) + ph0)
+
+    # Construct zero crossing object and test frequency calculation
+    Fs = 1. / np.mean(np.diff(t))
+    zc = ZeroCrossing(y, Fs, t0=t[0])
+    tools.assert_almost_equal(zc.getFrequency(), f, places=3)

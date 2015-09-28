@@ -6,6 +6,27 @@ import matplotlib.pyplot as plt
 
 
 class ZeroCrossing(object):
+    '''Zero crossing object.
+
+    Attributes:
+    -----------
+    Fs - float
+        Digitization rate for signal `y`.
+        [Fs] = samples / [time], where [time] = any convenient unit
+
+    t0 - float
+        The initial time corresponding to `y[0]`.
+        [t0] = 1 / [Fs]
+
+    y - array, (`N`,)
+        The digital signal to be demodulated.
+        [y] = arbitrary units
+
+    crossing_times - array, (`M`,)
+        The times for which signal `y` crosses through zero.
+        [crossing_times] = 1 / [Fs]
+
+    '''
     def __init__(self, y, Fs, t0=0, AC_coupled=True, plot=False):
         '''Initialize zero crossing demodulator object.
 
@@ -39,6 +60,8 @@ class ZeroCrossing(object):
 
         if AC_coupled:
             self.y -= self.getDCOffset(plot=plot)
+
+        self.crossing_times = self.getZeroCrossingTimes()
 
     def getTimeBase(self):
         'Get time base corresponding to signal `y`.'
@@ -88,11 +111,31 @@ class ZeroCrossing(object):
 
         return xtimes
 
-    def fit(self):
+    def getFrequency(self):
+        'Get frequency (units = [self.Fs]) of signal `self.y`.'
+        # Get slope of line fit to the zero crossing data
+        # [m] = 1 / [self.Fs]
+        m = self._fit()[0]
+
+        # Adjacent zero crossings are spaced by *half* a period;
+        # that is, T = 2 * m, where T = 1 / f and m = slope from above
+        # [f] = [self.Fs]
+        f = 0.5 / m
+
+        return f
+
+    def getNumCycles(self):
+        'Get number of cycles in signal `self.y`'
+        pass
+
+    def getPhaseChange(self):
+        'Get number of radians swept through in signal `self.y`.'
+        pass
+
+    def _fit(self):
         'Fit zero crossings to a line return relevant fitting parameters.'
-        xtimes = self.getZeroCrossingTimes()
-        ind = np.arange(len(xtimes))
-        return np.polyfit(ind, xtimes, 1)
+        ind = np.arange(len(self.crossing_times))
+        return np.polyfit(ind, self.crossing_times, 1)
 
     def _getFullCycleIndices(self):
         '''Get indices corresponding to "full"/complete cycles in signal,
