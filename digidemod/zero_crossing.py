@@ -91,17 +91,7 @@ class ZeroCrossing(object):
     def fit(self):
         'Fit zero crossings to a line return relevant fitting parameters.'
         xtimes = self.getZeroCrossingTimes()
-
-        # Using convention from Mlynek et al. FST 61 (2012),
-        # which states the first zero crossing time gets index 1,
-        # the second crossing gets index 2, and so forth...
-        # Presumably, this has something to do with the y-intercept
-        # of such a system gives the phase, but I'm not sold on
-        # the concept yet. Regardless of the convention for the
-        # index labels, the slope (and thus the computed frequency)
-        # will be the same.
-        ind = 1 + np.arange(len(xtimes))
-
+        ind = np.arange(len(xtimes))
         return np.polyfit(ind, xtimes, 1)
 
     def _getFullCycleIndices(self):
