@@ -103,14 +103,14 @@ class ZeroCrossing(object):
         ind = self._getFullCycleIndices()
         return np.std(self.y[ind])
 
-    def getZeroCrossingTimes(self, mode='fit', fitting_pts=4):
+    def getZeroCrossingTimes(self, mode='interp', Npts=4):
         'Get times corresponding to signal zero crossings.'
         # Find rising and falling zero crossing times
         if mode is 'fit':
-            rising_xtimes = self._getRisingZeroCrossingTimesSine(
-                fitting_pts=fitting_pts)
-            falling_xtimes = self._getRisingZeroCrossingTimesSine(
-                fitting_pts=fitting_pts, invert=True)
+            rising_xtimes = self._getRisingZeroCrossingTimesFit(
+                Npts=Npts)
+            falling_xtimes = self._getRisingZeroCrossingTimesFit(
+                Npts=Npts, invert=True)
         elif mode is 'interp':
             rising_xtimes = self._getRisingZeroCrossingTimes()
             falling_xtimes = self._getRisingZeroCrossingTimes(invert=True)
@@ -252,7 +252,7 @@ class ZeroCrossing(object):
 
         return crossings
 
-    def _getRisingZeroCrossingTimesSine(self, fitting_pts=4, invert=False):
+    def _getRisingZeroCrossingTimesFit(self, Npts=4, invert=False):
         '''Get times corresponding to a "rising" zero crossing.
         The zero crossing time is determined via fitting to a
         general sinusoidal function using the two points
@@ -267,6 +267,14 @@ class ZeroCrossing(object):
             rising zeros of the *negative* of the original function.
 
         '''
+        # Only fit an *even* number of points such that
+        # there is an equal number of points on each side
+        # of the zero crossing
+        print 'Using Npts = %i per fit.' % (2 * (Npts / 2))
+
+        # Find all indices immediately preceding a rising zero crossing
+        ind = self._getRisingZeroCrossingIndices(invert=invert)
+
         # Sinusoidal signal amplitude is related to its RMS value
         A0 = np.sqrt(2) * self.getRMS()
 
@@ -276,29 +284,67 @@ class ZeroCrossing(object):
 
         # Zero crossing times obtained from linear interpolation
         # between two nearest points to zero crossing
-        crossings0 = self._getRisingZeroCrossingTimes(invert=invert)
+        crossings = self._getRisingZeroCrossingTimes(invert=invert)
 
-        # Find all indices immediately preceding a rising zero crossing
-        ind = self._getRisingZeroCrossingIndices(invert=invert)
-        crossings = np.zeros(len(ind))
+        # Some zero crossings (at the beginning or end of the signal)
+        # may have insufficient surrounding data points to perform fit.
+        # While we could simply use the zero crossing estimate
+        # from linear interpolation for such points, this can
+        # significantly decrease the accuracy of subsequent calculations
+        # (e.g. signal frequency estimation). Thus, the `exclusions` list
+        # will accumulate indices of such points so that they can later
+        # be deleted from the dataset.
+        exclusions = []
 
-        for count, i in enumerate(ind):
-            i1 = np.max([0, i - (int(0.5 * fitting_pts) - 1)])
-            i2 = np.min([i + (int(0.5 * fitting_pts)), len(self.y)])
-            t = self.getTimeBase()[i1:i2]
-            y = self.y[i1:i2]
+        # For each zero crossing, create a slice of data (of size `Npts`)
+        # about the zero crossing and fit to a sinusoid. The value of
+        # the zero crossing can then be extracted from the fit.
+        for i in np.arange(len(crossings)):
+            # Determine index of first point to include in fit.
+            # An additional value of `1` is subtracted because
+            # `ind[i]` immediately *precedes* the zero crossing
+            ind0 = ind[i] - (Npts / 2) - 1
+
+            # ... but don't allow an illegal index. In practice,
+            # this is typically only a (potential) problem for
+            # the first zero crossing.
+            if ind0 < 0:
+                ind0 = 0
+
+            # Similarly, determine index of last point to include in fit
+            indf = ind[i] + (Npts / 2)
+
+            # ... but again, don't allow an illegal index. In practice,
+            # this is typically only a (potential) problem for
+            # the last zero crossing.
+            if indf > len(self.y):
+                indf = len(self.y)
+
+            # Slice original signal to obtain data points for fitting
+            t = self.getTimeBase()[ind0:indf]
+            y = self.y[ind0:indf]
 
             if invert:
                 y *= -1
 
             # Collect estimated fitting parameters
-            p0 = np.array([A0, f0, crossings0[count]])
+            p0 = np.array([A0, f0, crossings[i]])
 
-            # Fit the data to obtain best fit parameters, `p`
-            p = curve_fit(self._sinusoid, t, y, p0=p0)[0]
+            # Fit data and extract zero crossing time
+            try:
+                p = curve_fit(self._sinusoid, t, y, p0=p0)[0]
+                crossings[i] = p[-1]
 
-            # Extract zero crossing time
-            crossings[count] = p[-1]
+            except TypeError:
+                print 'Insufficient surrounding data to perform fit at:'
+                print '    t = %f' % t[ind[i]]
+                print '    ind0 = %i' % ind0
+                print '    indf = %i' % indf
+                print 'Excluding this zero crossing from the data set.'
+
+        # Remove zero crossings that had insufficient
+        # surrounding data points to perform the fit
+        crossings = np.delete(crossings, exclusions)
 
         return crossings
 
