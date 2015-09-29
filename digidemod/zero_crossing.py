@@ -254,17 +254,37 @@ class ZeroCrossing(object):
 
     def _getRisingZeroCrossingTimesFit(self, Npts=4, invert=False):
         '''Get times corresponding to a "rising" zero crossing.
+
         The zero crossing time is determined via fitting to a
-        general sinusoidal function using the two points
-        immediately preceding the zero crossing and the two
-        points immediately following a zero crossing.
+        general sinusoidal function.
 
         Parameters:
         -----------
+        Npts - int
+            Number of points about zero crossing to include in fit.
+            To ensure only an equal number of points are on each
+            side of the zero crossing, `Npts` is automatically rounded
+            to the next lowest even integer. If there are ~10 points
+            per cycle, then `Npts` = 4 appears to give good results.
+
         invert - bool
             If True, find "falling" zero crossings as opposed to rising.
             Functionally, this is simply accomplished by finding the
             rising zeros of the *negative* of the original function.
+
+        Returns:
+        --------
+        crossings - array, (`N`,)
+            The zero crossing times detected via fitting to a sine function.
+            [crossings] = 1 / [self.Fs]
+
+        exclusions - list
+            Occasionally, there will be insufficient data surrounding
+            a particular zero crossing and the attempt to fit to a
+            sinusoidal function will fail. If this occurs, this
+            zero crossing is excluded from the dataset and its
+            index (relative to e.g. `self.y`) is returned in
+            `exclusions`.
 
         '''
         # Only fit an *even* number of points such that
@@ -346,7 +366,7 @@ class ZeroCrossing(object):
         # surrounding data points to perform the fit
         crossings = np.delete(crossings, exclusions)
 
-        return crossings
+        return crossings, exclusions
 
     def _sinusoid(self, t, A, f0, t0):
         'General form of a sinusoidal function for curve fitting purposes.'
