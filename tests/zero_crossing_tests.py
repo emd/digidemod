@@ -104,3 +104,49 @@ def test_getNumCycles():
     Fs = 1. / np.mean(np.diff(t))
     zc = ZeroCrossing(y, Fs, t0=t[0])
     tools.assert_almost_equal(zc.getNumCycles(), num_cycles, places=2)
+
+
+def test__getRisingZeroCrossingTimes():
+    # Create signal with well-known zero crossings
+    f = 0.125
+    t = 0.5 + np.linspace(0, 100, 101)
+    y = np.cos(2 * np.pi * f * t)
+    Fs = 1. / np.mean(np.diff(t))
+
+    # Construct zero crossing object
+    zc = ZeroCrossing(y, Fs, t0=t[0])
+
+    # Test identification of *rising* zero crossings
+    # via linear interpolation
+    xtimes_rising_exact = np.arange(6, t[-1], int(1. / f))
+    xtimes_rising_calc = zc._getRisingZeroCrossingTimes()
+    np.testing.assert_allclose(xtimes_rising_exact, xtimes_rising_calc)
+
+    # Test identification of *falling* zero crossings
+    # via linear interpolation
+    xtimes_falling_exact = np.arange(2, t[-1], int(1. / f))
+    xtimes_falling_calc = zc._getRisingZeroCrossingTimes(invert=True)
+    np.testing.assert_allclose(xtimes_falling_exact, xtimes_falling_calc)
+
+
+def test__getRisingZeroCrossingTimesFit():
+    # Create signal with well-known zero crossings
+    f = 0.125
+    t = 0.5 + np.linspace(0, 100, 101)
+    y = np.cos(2 * np.pi * f * t)
+    Fs = 1. / np.mean(np.diff(t))
+
+    # Construct zero crossing object
+    zc = ZeroCrossing(y, Fs, t0=t[0])
+
+    # Test identification of *rising* zero crossings
+    # via fitting a sinusoidal function
+    xtimes_rising_exact = np.arange(6, t[-1], int(1. / f))
+    xtimes_rising_calc = zc._getRisingZeroCrossingTimesFit()
+    np.testing.assert_allclose(xtimes_rising_exact, xtimes_rising_calc)
+
+    # Test identification of *falling* zero crossings
+    # via fitting a sinusoidal function
+    xtimes_falling_exact = np.arange(2, t[-1], int(1. / f))
+    xtimes_falling_calc = zc._getRisingZeroCrossingTimesFit(invert=True)
+    np.testing.assert_allclose(xtimes_falling_exact, xtimes_falling_calc)
