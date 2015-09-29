@@ -57,7 +57,7 @@ class ZeroCrossing(object):
         '''
         self.Fs = Fs
         self.t0 = t0
-        self.y = y
+        self.y = y.copy()
 
         if AC_coupled:
             self.y -= self.getDCOffset(plot=plot)
@@ -322,7 +322,7 @@ class ZeroCrossing(object):
 
             # Slice original signal to obtain data points for fitting
             t = self.getTimeBase()[ind0:indf]
-            y = self.y[ind0:indf]
+            y = np.copy(self.y[ind0:indf])
 
             if invert:
                 y *= -1
