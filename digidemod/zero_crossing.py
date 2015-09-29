@@ -3,6 +3,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 
 
 class ZeroCrossing(object):
@@ -102,11 +103,19 @@ class ZeroCrossing(object):
         ind = self._getFullCycleIndices()
         return np.std(self.y[ind])
 
-    def getZeroCrossingTimes(self):
+    def getZeroCrossingTimes(self, mode='fit', fitting_pts=4):
         'Get times corresponding to signal zero crossings.'
         # Find rising and falling zero crossing times
-        rising_xtimes = self._getRisingZeroCrossingTimes()
-        falling_xtimes = self._getRisingZeroCrossingTimes(invert=True)
+        if mode is 'fit':
+            rising_xtimes = self._getRisingZeroCrossingTimesSine(
+                fitting_pts=fitting_pts)
+            falling_xtimes = self._getRisingZeroCrossingTimesSine(
+                fitting_pts=fitting_pts, invert=True)
+        elif mode is 'interp':
+            rising_xtimes = self._getRisingZeroCrossingTimes()
+            falling_xtimes = self._getRisingZeroCrossingTimes(invert=True)
+        else:
+            raise ValueError('Mode may only be `fit` or `interp`.')
 
         # Merge and sort the zero crossing arrays
         xtimes = np.concatenate((rising_xtimes, falling_xtimes))
@@ -242,6 +251,60 @@ class ZeroCrossing(object):
         crossings += self.t0
 
         return crossings
+
+    def _getRisingZeroCrossingTimesSine(self, fitting_pts=4, invert=False):
+        '''Get times corresponding to a "rising" zero crossing.
+        The zero crossing time is determined via fitting to a
+        general sinusoidal function using the two points
+        immediately preceding the zero crossing and the two
+        points immediately following a zero crossing.
+
+        Parameters:
+        -----------
+        invert - bool
+            If True, find "falling" zero crossings as opposed to rising.
+            Functionally, this is simply accomplished by finding the
+            rising zeros of the *negative* of the original function.
+
+        '''
+        # Sinusoidal signal amplitude is related to its RMS value
+        A0 = np.sqrt(2) * self.getRMS()
+
+        # Sinusoid's estimated frequency from fit to zero crossing times
+        # obtained via linear interpolation
+        f0 = self.getFrequency()
+
+        # Zero crossing times obtained from linear interpolation
+        # between two nearest points to zero crossing
+        crossings0 = self._getRisingZeroCrossingTimes(invert=invert)
+
+        # Find all indices immediately preceding a rising zero crossing
+        ind = self._getRisingZeroCrossingIndices(invert=invert)
+        crossings = np.zeros(len(ind))
+
+        for count, i in enumerate(ind):
+            i1 = np.max([0, i - (int(0.5 * fitting_pts) - 1)])
+            i2 = np.min([i + (int(0.5 * fitting_pts)), len(self.y)])
+            t = self.getTimeBase()[i1:i2]
+            y = self.y[i1:i2]
+
+            if invert:
+                y *= -1
+
+            # Collect estimated fitting parameters
+            p0 = np.array([A0, f0, crossings0[count]])
+
+            # Fit the data to obtain best fit parameters, `p`
+            p = curve_fit(self._sinusoid, t, y, p0=p0)[0]
+
+            # Extract zero crossing time
+            crossings[count] = p[-1]
+
+        return crossings
+
+    def _sinusoid(self, t, A, f0, t0):
+        'General form of a sinusoidal function for curve fitting purposes.'
+        return A * np.sin(2 * np.pi * f0 * (t - t0))
 
 
 if __name__ == '__main__':
