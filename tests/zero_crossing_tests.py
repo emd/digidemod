@@ -142,11 +142,11 @@ def test__getRisingZeroCrossingTimesFit():
     # Test identification of *rising* zero crossings
     # via fitting a sinusoidal function
     xtimes_rising_exact = np.arange(6, t[-1], int(1. / f))
-    xtimes_rising_calc = zc._getRisingZeroCrossingTimesFit()
+    xtimes_rising_calc, ex = zc._getRisingZeroCrossingTimesFit()
     np.testing.assert_allclose(xtimes_rising_exact, xtimes_rising_calc)
 
     # Test identification of *falling* zero crossings
     # via fitting a sinusoidal function
     xtimes_falling_exact = np.arange(2, t[-1], int(1. / f))
-    xtimes_falling_calc = zc._getRisingZeroCrossingTimesFit(invert=True)
+    xtimes_falling_calc, ex = zc._getRisingZeroCrossingTimesFit(invert=True)
     np.testing.assert_allclose(xtimes_falling_exact, xtimes_falling_calc)
