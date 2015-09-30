@@ -20,11 +20,12 @@ class ZeroCrossing(object):
         [t0] = 1 / [Fs]
 
     y - array, (`N`,)
-        The digital signal to be demodulated.
+        The digital (sinusoidal) signal from which the zero crossings
+        will be found.
         [y] = arbitrary units
 
     crossing_times - array, (`M`,)
-        The times for which signal `y` crosses through zero.
+        The times for which signal `y` is calculated to cross through zero.
         [crossing_times] = 1 / [Fs]
 
     '''
