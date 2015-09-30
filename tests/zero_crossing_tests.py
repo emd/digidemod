@@ -8,7 +8,7 @@ def test_constant():
     # Specify `AC_coupled` = False to prevent computation of DC offset,
     # which is only a well-defined operation when there are two or more
     # zero crossings of the same type.
-    zc = ZeroCrossing(np.array([1, 1]), 1, AC_coupled=False)
+    zc = ZeroCrossing(np.array([1, 1]), 1, auto=False)
     tools.assert_equal(len(zc._getRisingZeroCrossingIndices()), 0)
     tools.assert_equal(len(zc._getRisingZeroCrossingTimesLerp()), 0)
 
@@ -18,7 +18,7 @@ def test_linear():
     # Specify `AC_coupled` = False to prevent computation of DC offset,
     # which is only a well-defined operation when there are two or more
     # zero crossings of the same type.
-    zc = ZeroCrossing(np.array([-1, 0, 1]), 1, AC_coupled=False)
+    zc = ZeroCrossing(np.array([-1, 0, 1]), 1, auto=False)
     tools.assert_equal(zc._getRisingZeroCrossingIndices(), np.array([0]))
     tools.assert_equal(zc._getRisingZeroCrossingTimesLerp(), np.array([1]))
 

@@ -24,12 +24,21 @@ class ZeroCrossing(object):
         will be found.
         [y] = arbitrary units
 
+    rms - float
+        The RMS of signal `y`.
+        [rms] = [y]
+
     crossing_times - array, (`M`,)
         The times for which signal `y` is calculated to cross through zero.
         [crossing_times] = 1 / [Fs]
 
+    f - float
+        The calculated frequency of (sinusoidal) signal `y`.
+        [f] = [Fs]
+
     '''
-    def __init__(self, y, Fs, t0=0, AC_coupled=True, plot=False):
+    def __init__(self, y, Fs, t0=0, auto=True,
+                 mode='lerp', Npts=4, AC_coupled=True):
         '''Initialize zero crossing demodulator object.
 
         Parameters:
@@ -46,27 +55,63 @@ class ZeroCrossing(object):
             The initial time corresponding to `y[0]`.
             [t0] = 1 / [Fs]
 
+        auto - bool
+            If True, automatically process data.
+
+        mode - string
+            The method by which the zero crossings are calculated.
+            Allowable options are:
+
+                'lerp': linear interpolation between the two
+                        data points closest to the zero crossing
+
+                'fit':  fitting a general sinusoidal function to the
+                        `Npts` data points closest to the zero crossing
+
+        Npts - int
+            The number of data points surrounding a zero crossing
+            to be included if `mode` is specified as 'fit'.
+            If `Npts` is not even, it is always rounded to
+            the next lowest even integer. This ensures that
+            there are equal numbers of points both above
+            and below the zero crossing. If `mode` is specified
+            as 'lerp', `Npts` has no effect.
+
         AC_coupled - bool
             If True, remove DC offset from signal `y` before
             computing the zero crossing times
-
-        plot - bool
-            If True, plot the original signal, the component
-            of the signal used to compute the DC offset/RMS,
-            and the computed DC offset.
 
         '''
         self.Fs = Fs
         self.t0 = t0
         self.y = y.copy()
 
+        if auto:
+            self.process(mode=mode, Npts=Npts, AC_coupled=AC_coupled)
+
+    def process(self, mode='lerp', Npts=4, AC_coupled=True):
+        'Perform typical zero crossing calculations.'
+        if mode not in set(['lerp', 'fit']):
+            raise ValueError("Mode may only be 'lerp' or 'fit'.")
+
         if AC_coupled:
-            self.y -= self.getDCOffset(plot=plot)
+            self.y -= self.getDCOffset()
 
-        self.crossing_times = self.getZeroCrossingTimes()
+        self.rms = self.getRMS()
 
-        if len(self.crossing_times) > 0:
+        # If `mode` is specified as 'fit', the sinusoidal fitting process
+        # still relies on estimates from the (cruder) linear interpolation,
+        # so we will always perform 'lerp' detection
+        self.crossing_times = self.getZeroCrossingTimes(mode='lerp')
+
+        self.f = self.getFrequency()
+
+        if mode is 'fit':
+            self.crossing_times = self.getZeroCrossingTimes(
+                mode='fit', Npts=Npts)
             self.f = self.getFrequency()
+
+        return
 
     def getTimeBase(self):
         'Get time base corresponding to signal `y`.'
@@ -104,19 +149,19 @@ class ZeroCrossing(object):
         ind = self._getFullCycleIndices()
         return np.std(self.y[ind])
 
-    def getZeroCrossingTimes(self, mode='interp', Npts=4):
+    def getZeroCrossingTimes(self, mode='lerp', Npts=4):
         'Get times corresponding to signal zero crossings.'
         # Find rising and falling zero crossing times
-        if mode is 'fit':
-            rising_xtimes = self._getRisingZeroCrossingTimesFit(
-                Npts=Npts)
-            falling_xtimes = self._getRisingZeroCrossingTimesFit(
-                Npts=Npts, invert=True)
-        elif mode is 'interp':
+        if mode is 'lerp':
             rising_xtimes = self._getRisingZeroCrossingTimesLerp()
             falling_xtimes = self._getRisingZeroCrossingTimesLerp(invert=True)
+        elif mode is 'fit':
+            rising_xtimes, exclusions = self._getRisingZeroCrossingTimesFit(
+                Npts=Npts)
+            falling_xtimes, exclusions = self._getRisingZeroCrossingTimesFit(
+                Npts=Npts, invert=True)
         else:
-            raise ValueError('Mode may only be `fit` or `interp`.')
+            raise ValueError("Mode may only be 'lerp' or 'fit'.")
 
         # Merge and sort the zero crossing arrays
         xtimes = np.concatenate((rising_xtimes, falling_xtimes))
@@ -276,17 +321,19 @@ class ZeroCrossing(object):
 
         Returns:
         --------
+        tuple - (crossings, exclusions), where:
+
         crossings - array, (`N`,)
             The zero crossing times detected via fitting to a sine function.
             [crossings] = 1 / [self.Fs]
 
         exclusions - list
             Occasionally, there will be insufficient data surrounding
-            a particular zero crossing and the attempt to fit to a
-            sinusoidal function will fail. If this occurs, this
-            zero crossing is excluded from the dataset and its
-            index (relative to e.g. `self.y`) is returned in
-            `exclusions`.
+            particular zero crossings, and the attempts to fit to a
+            sinusoidal function will fail. If this occurs, these
+            zero crossing are excluded from the dataset and their
+            index (relative to the other zero crossings in `self.y`)
+            are returned in `exclusions`.
 
         '''
         # Only fit an *even* number of points such that
@@ -297,14 +344,7 @@ class ZeroCrossing(object):
         # Find all indices immediately preceding a rising zero crossing
         ind = self._getRisingZeroCrossingIndices(invert=invert)
 
-        # Sinusoidal signal amplitude is related to its RMS value
-        A0 = np.sqrt(2) * self.getRMS()
-
-        # Sinusoid's estimated frequency from fit to zero crossing times
-        # obtained via linear interpolation
-        f0 = self.getFrequency()
-
-        # Zero crossing times obtained from linear interpolation
+        # Rising zero crossing times obtained from linear interpolation
         # between two nearest points to zero crossing
         crossings = self._getRisingZeroCrossingTimesLerp(invert=invert)
 
@@ -350,7 +390,7 @@ class ZeroCrossing(object):
                 y *= -1
 
             # Collect estimated fitting parameters
-            p0 = np.array([A0, f0, crossings[i]])
+            p0 = np.array([np.sqrt(2) * self.rms, self.f, crossings[i]])
 
             # Fit data and extract zero crossing time
             try:
@@ -359,6 +399,7 @@ class ZeroCrossing(object):
 
             except TypeError:
                 print 'Insufficient surrounding data to perform fit at:'
+                print '    zero crossing # = %i' % i
                 print '    t = %f' % t[ind[i]]
                 print '    ind0 = %i' % ind0
                 print '    indf = %i' % indf
