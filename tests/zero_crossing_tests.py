@@ -10,7 +10,7 @@ def test_constant():
     # zero crossings of the same type.
     zc = ZeroCrossing(np.array([1, 1]), 1, AC_coupled=False)
     tools.assert_equal(len(zc._getRisingZeroCrossingIndices()), 0)
-    tools.assert_equal(len(zc._getRisingZeroCrossingTimes()), 0)
+    tools.assert_equal(len(zc._getRisingZeroCrossingTimesLerp()), 0)
 
 
 def test_linear():
@@ -20,7 +20,7 @@ def test_linear():
     # zero crossings of the same type.
     zc = ZeroCrossing(np.array([-1, 0, 1]), 1, AC_coupled=False)
     tools.assert_equal(zc._getRisingZeroCrossingIndices(), np.array([0]))
-    tools.assert_equal(zc._getRisingZeroCrossingTimes(), np.array([1]))
+    tools.assert_equal(zc._getRisingZeroCrossingTimesLerp(), np.array([1]))
 
 
 def test_getTimeBase():
@@ -106,7 +106,7 @@ def test_getNumCycles():
     tools.assert_almost_equal(zc.getNumCycles(), num_cycles, places=2)
 
 
-def test__getRisingZeroCrossingTimes():
+def test__getRisingZeroCrossingTimesLerp():
     # Create signal with well-known zero crossings
     f = 0.125
     t = 0.5 + np.linspace(0, 100, 101)
@@ -119,13 +119,13 @@ def test__getRisingZeroCrossingTimes():
     # Test identification of *rising* zero crossings
     # via linear interpolation
     xtimes_rising_exact = np.arange(6, t[-1], int(1. / f))
-    xtimes_rising_calc = zc._getRisingZeroCrossingTimes()
+    xtimes_rising_calc = zc._getRisingZeroCrossingTimesLerp()
     np.testing.assert_allclose(xtimes_rising_exact, xtimes_rising_calc)
 
     # Test identification of *falling* zero crossings
     # via linear interpolation
     xtimes_falling_exact = np.arange(2, t[-1], int(1. / f))
-    xtimes_falling_calc = zc._getRisingZeroCrossingTimes(invert=True)
+    xtimes_falling_calc = zc._getRisingZeroCrossingTimesLerp(invert=True)
     np.testing.assert_allclose(xtimes_falling_exact, xtimes_falling_calc)
 
 

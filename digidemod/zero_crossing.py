@@ -113,8 +113,8 @@ class ZeroCrossing(object):
             falling_xtimes = self._getRisingZeroCrossingTimesFit(
                 Npts=Npts, invert=True)
         elif mode is 'interp':
-            rising_xtimes = self._getRisingZeroCrossingTimes()
-            falling_xtimes = self._getRisingZeroCrossingTimes(invert=True)
+            rising_xtimes = self._getRisingZeroCrossingTimesLerp()
+            falling_xtimes = self._getRisingZeroCrossingTimesLerp(invert=True)
         else:
             raise ValueError('Mode may only be `fit` or `interp`.')
 
@@ -218,11 +218,12 @@ class ZeroCrossing(object):
 
         return np.where(np.logical_and(y[:-1] < 0, y[1:] >= 0))[0]
 
-    def _getRisingZeroCrossingTimes(self, invert=False):
+    def _getRisingZeroCrossingTimesLerp(self, invert=False):
         '''Get times corresponding to a "rising" zero crossing.
-        The zero crossing time is determined via linear interpolation
-        between the point immediately preceding the zero crossing
-        and the point immediately following the zero crossing.
+
+        The zero crossing time is determined via linear interpolation (lerp)
+        between the point immediately preceding the zero crossing and
+        the point immediately following the zero crossing.
 
         The motivation for this function is derived from endolith's
         `freq_from_crossings(...)` routine found here:
@@ -305,7 +306,7 @@ class ZeroCrossing(object):
 
         # Zero crossing times obtained from linear interpolation
         # between two nearest points to zero crossing
-        crossings = self._getRisingZeroCrossingTimes(invert=invert)
+        crossings = self._getRisingZeroCrossingTimesLerp(invert=invert)
 
         # Some zero crossings (at the beginning or end of the signal)
         # may have insufficient surrounding data points to perform fit.
