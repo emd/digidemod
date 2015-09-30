@@ -371,32 +371,3 @@ class ZeroCrossing(object):
     def _sinusoid(self, t, A, f0, t0):
         'General form of a sinusoidal function for curve fitting purposes.'
         return A * np.sin(2 * np.pi * f0 * (t - t0))
-
-
-if __name__ == '__main__':
-    t0 = 0
-    tf = 10
-    dt = 0.1
-    Fs = 1. / dt
-
-    t = np.arange(t0, tf, dt)
-    y = np.cos(2 * np.pi * t)
-
-    zc = ZeroCrossing(y, Fs, t0=t0)
-
-    plt.plot(t, zc.y, '-sb')
-    plt.axhline(0, c='k')
-
-    rising_ind = zc._getRisingZeroCrossingIndices()
-    plt.plot(t[rising_ind], zc.y[rising_ind], 'sg')
-
-    rising_zc_time = zc._getRisingZeroCrossingTimes()
-    plt.plot(rising_zc_time, np.zeros(len(rising_zc_time)), '*r')
-
-    falling_ind = zc._getRisingZeroCrossingIndices(invert=True)
-    plt.plot(t[falling_ind], zc.y[falling_ind], 'og')
-
-    falling_zc_time = zc._getRisingZeroCrossingTimes(invert=True)
-    plt.plot(falling_zc_time, np.zeros(len(falling_zc_time)), '*r')
-
-    plt.show()
