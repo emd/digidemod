@@ -97,11 +97,24 @@ def decimate(y, Q, t=None, trans=0.5, ripple=0.02):
     ydec = lpf.applyTo(y)[::Q]
 
     # However, boundary effects will be visible in the edges of `ydec`.
-    # Let's find the corresponding "valid" indices where boundary effects
-    # are *not* present.
-    valid = lpf.getValidSlice()
-    valid.start = (valid.start // Q) + 1
-    valid.stop = (valid.stop // Q) - 1
+    #
+    # We can easily extract the slice relative to the initial time base
+    # where boundary effects are *not* present...
+    valid0 = lpf.getValidSlice()
+
+    # ... and we can simply decimate the slice indices
+    start = (valid0.start // Q)
+    stop = (valid0.stop // Q)
+
+    # Note that the `valid0.stop` < 0 such that the integer division
+    # rounds to a more negative index, erring on the side of caution,
+    # away from the boundary effects. The opposite is true of `valid0.start`.
+    # Thus, almost always, `start` will have an off-by-one error towards
+    # the boundary effects; remove it if needed.
+    if start != -stop:
+        start += 1
+
+    valid = slice(start, stop, None)
 
     if t is None:
         return ydec, valid
