@@ -5,9 +5,9 @@ except ImportError:
 
 config = {
     'name': 'digidemod',
-    'version': '0.1.2',
+    'version': '0.1.3',
     'packages': ['digidemod'],
-    'install_requires': ['numpy', 'scipy', 'matplotlib', 'nose'],
+    'install_requires': ['numpy', 'scipy', 'matplotlib', 'nose', 'filters'],
     'author': 'Evan M. Davis',
     'author_email': 'emd@mit.edu',
     'url': '',
